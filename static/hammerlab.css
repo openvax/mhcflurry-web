@@ -1,0 +1,81 @@
+/* Sinai Blue Theme */
+.theme-base-sb .sidebar,
+.theme-base-sb .sidebar-toggle:active,
+.theme-base-sb #sidebar-checkbox:checked ~ .sidebar-toggle {
+  background-color: #00a3da;
+}
+.theme-base-sb .container a,
+.theme-base-sb .sidebar-toggle,
+.theme-base-sb .related-posts li a:hover {
+  color: #00a3da;
+}
+
+.masthead {
+  margin-bottom: 2rem;
+}
+
+label {
+    display: block;
+}
+
+img {
+  margin: auto;
+}
+
+.inline img {
+  height: 1em;
+  display: inline-block;
+  border-radius: 0px;
+  margin: 0px;
+  padding: 0px;
+}
+
+div.inline span.needsmargin {
+  margin-left: 8px;
+}
+
+#poc {
+  color: #c3167b;
+}
+
+html {
+  font-family: "freight-text-pro", Georgia, "Times New Roman", serif;
+}
+
+h1, h2, h3, h4, h5, h6, .sidebar, .pagination {
+  font-family: "p22-underground", Helvetica, Arial, sans-serif;
+}
+
+.masthead-title a {
+  font-weight: 500;
+}
+
+a:hover {
+  text-decoration: none;
+}
+
+ul ul {
+  margin-bottom: 0px;
+}
+
+.image-container {
+  text-align: center;
+}
+
+.image-container img {
+  border: 1px solid gray;
+  padding: 0.5em;
+}
+
+.image-caption {
+  font-style: italic;
+  font-size: 80%;
+}
+
+.caption {
+  font-style: italic;
+  font-size: 80%;
+  text-align: center;
+  position: relative;
+  top: -1em;
+}

@@ -1,0 +1,24 @@
+{% extends "base.html" -%}
+{% block content -%}
+
+<form action="/results" method="post">
+
+<label>Enter up to 1000 peptides seperated by a `,`</label>
+<textarea name="peptides" rows="4" cols="50">
+</textarea>    
+
+<label>Please select an allele</label>
+<select name="allele" class="form-control">
+    {% for allele in alleles %}
+    <option value="{{allele}}">{{allele}}</option>
+   {% endfor %}
+</select>
+
+<input type="submit"/>
+
+
+</form>
+
+
+{%- endblock content %}
+
