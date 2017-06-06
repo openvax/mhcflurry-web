@@ -1,0 +1,24 @@
+<html>
+<head>
+
+</head>
+<body>
+<table>
+<tr>
+<th>Peptide</th>
+{% for allele in alleles %}
+<th> {{ allele }} </th>
+{% endfor %}
+</tr>
+<tr>
+{% for key in result %}
+<td> {{ key }} </td>
+{% for affinity in result[key] %}
+	<td> {{ affinity }}</td>
+{% endfor %}
+</tr>
+{% endfor %}
+</table>
+
+</body>
+</html>
