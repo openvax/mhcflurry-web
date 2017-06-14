@@ -1,6 +1,5 @@
 {% extends "base.html" -%}
 {% block content -%}
-
 <table>
 <tr>
 <th>Peptide</th>
@@ -17,4 +16,12 @@
 </tr>
 {% endfor %}
 </table>
+<button class="submit_button" id="export" data-export="export">Export .CSV</button>
+<script>
+$("#export").click(function(){
+  $("table").tableToCSV();
+});
+</script>
+
+
 {%- endblock content %}
