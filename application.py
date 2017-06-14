@@ -9,7 +9,7 @@ from wtforms.validators import DataRequired
 from wtforms.widgets import TextArea
 
 
-app = Flask(__name__)
+application = Flask(__name__)
 _predictor = Class1AffinityPredictor.load()
 
 
@@ -67,11 +67,11 @@ def process_results(results, alleles):
         processed_result[result[0]][alleles.index(result[1])] = results[result]
     return processed_result
 
-@app.route('/')
+@application.route('/')
 def index():
     return render_template('index.html', alleles=_predictor.supported_alleles, form=MHCFlurry_Form())    
 
-@app.route('/results', methods=["POST"])
+@application.route('/results', methods=["POST"])
 def get_results():
 
     try:
@@ -102,5 +102,5 @@ def get_results():
     except Exception as e:
         return str(e)
 
-app.debug = True
-app.run()
+application.debug = True
+application.run()
