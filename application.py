@@ -82,6 +82,13 @@ def process_results(results, alleles):
 def index():
     return render_template('index.html', alleles=_predictor.supported_alleles, form=MHCFlurry_Form())    
 
+import tensorflow
+@application.route('/tf')
+def tf():
+    return str(tensorflow.__version__)    
+
+
+
 @application.route('/results', methods=["POST"])
 def get_results():
 
