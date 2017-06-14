@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request
-from mhcflurry import Class1AffinityPredictor
-from mhctools import MHCflurry
+#from mhcflurry import Class1AffinityPredictor
+#from mhctools import MHCflurry
 from Bio import SeqIO
 from io import StringIO
 from flask_wtf import Form
@@ -10,13 +10,15 @@ from wtforms.widgets import TextArea
 
 
 app = Flask(__name__)
-_predictor = Class1AffinityPredictor.load()
+#_predictor = Class1AffinityPredictor.load()
 
 
 peptide_length_choices = [(str(i), str(i)) for i in range(8, 15)]
 peptide_length_choices = [('all', 'all')] + peptide_length_choices
 
-allele_choices = [(str(i), str(i)) for i in _predictor.supported_alleles]
+#allele_choices = [(str(i), str(i)) for i in _predictor.supported_alleles]
+allele_choices = [str(i) for i in range(10)]
+
 
 class MHCFlurry_Form(Form):
     peptide_input_type = SelectField("Input Type",
@@ -70,6 +72,10 @@ def process_results(results, alleles):
 @app.route('/')
 def index():
     return render_template('index.html', alleles=_predictor.supported_alleles, form=MHCFlurry_Form())    
+
+@app.route('/10')
+def ten():
+    return render_template('table.html')
 
 @app.route('/results', methods=["POST"])
 def get_results():
