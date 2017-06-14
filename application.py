@@ -101,5 +101,6 @@ def get_results():
     except Exception as e:
         return str(e)
 
-application.debug = True
-application.run()
+if __name__ == "__main__":
+    application.debug = True
+    application.run()
