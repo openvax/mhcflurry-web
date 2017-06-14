@@ -100,6 +100,7 @@ matplotlib==2.0.0
 memoized-property==1.0.3
 -e git+git@github.com:rohanpai/mhcflurry.git@8b07269a0f621e8de061f197b4bf768dfb9a0cc8#egg=mhcflurry
 mhcnames==0.1.0
+mhcflurry
 mhctools==1.4.0
 mistune==0.7.3
 mock==2.0.0
