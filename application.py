@@ -19,7 +19,7 @@ allele_choices = [(str(i), str(i)) for i in _predictor.supported_alleles]
 
 class MHCFlurry_Form(Form):
     peptide_input_type = SelectField("Input Type",
-        choices=[('fasta', 'FASTA'), ('peptide', 'Peptide')],
+        choices=[('fasta', 'FASTA'), ('peptide', 'Peptides'), ('protein', 'Protein')],
         validators=[validators.InputRequired()],
     )
 
@@ -39,7 +39,19 @@ class MHCFlurry_Form(Form):
 
     selected_alleles = StringField('Selected Alleles')
 
-def predict_peptide(protein_sequence_list, alleles):
+def predict_peptides(protein_sequence_list, alleles):
+    predictor = MHCflurry(alleles=alleles)
+    predictor.predictor = _predictor
+    binding_predictions = predictor.predict_peptides(protein_sequence_list)    
+    prediction_scores = {
+        (x.peptide, x.allele): x.affinity for x in binding_predictions
+    }
+    print(prediction_scores)
+    return prediction_scores
+
+
+
+def predict_subsequences(protein_sequence_list, alleles):
     predictor = MHCflurry(alleles=alleles)
     predictor.predictor = _predictor
     binding_predictions = predictor.predict_subsequences(protein_sequence_list,
@@ -56,7 +68,7 @@ def predict_fasta(fasta_contents, alleles):
         record.id: str(record.seq) for record in
         SeqIO.parse(StringIO(fasta_contents), "fasta")
     }
-    return predict_peptide(protein_sequences, alleles)
+    return predict_subsequences(protein_sequences, alleles)
 
 def process_results(results, alleles):
     processed_result = {}
@@ -75,28 +87,22 @@ def get_results():
 
     try:
         form = MHCFlurry_Form(request.form)
-        print("a")
         if not form.validate():
             return "invalid form"
-        print("a")
 
         peptide_type = form.peptide_input_type.data
-        print("a")
-
         alleles = form.selected_alleles.data
-        print("a")
         alleles = alleles.split(';')
-        print("a")
         alleles = [str(allele) for allele in alleles if allele != ""]
         result = None
-        print("a")
-        print(peptide_type)
         if peptide_type == "fasta":
-            print("blah")
             result = predict_fasta(str(form.peptide_contents.data), alleles=alleles)
+        elif peptide_type == "protein":
+            result = predict_subsequences([str(form.peptide_contents.data)], alleles=alleles)
         else:
-            result = predict_peptide([str(form.peptide_contents.data)], alleles=alleles)
-        print("z")
+            peptide_contents = str(form.peptide_contents.data).replace(' ', '')
+            peptide_contents = peptide_contents.split(',')
+            result = predict_peptides(peptide_contents, alleles=alleles)
         return render_template('result.html', result=process_results(result, alleles), alleles=alleles)
     except Exception as e:
         return str(e)
