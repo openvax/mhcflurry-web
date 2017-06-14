@@ -9,6 +9,11 @@ from wtforms.validators import DataRequired
 from wtforms.widgets import TextArea
 
 
+
+from subprocess import call
+call(["mhcflurry-downloads", "fetch"])
+
+
 application = Flask(__name__)
 _predictor = Class1AffinityPredictor.load()
 
