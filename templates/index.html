@@ -2,45 +2,39 @@
 {% block content -%}
 
 <form action="/results" method="post">
-
-
-
-<div>
-<label>Type of input </label>
-<select name="peptide_type" size="1"> 
-<option value="fasta" selected="">Fasta</option>
-<option value="peptide">Peptide</option>
-</select>
-</div>
-
-<div>
-<label>Enter up to 1000 peptides seperated by a `,`</label>
-<textarea name="peptides" rows="4" cols="50">
-</textarea>
-</div>
-
-<div>
-<label>Please select an allele</label>
-<select name="allele" size="12" class="form-control" onchange="addAllele(this)">
-    {% for allele in alleles %}
-    <option value="{{allele}}">{{allele}}</option>
-   {% endfor %}
-</select>
-</br>
-<input id='alleles' spellcheck="false" name="alleles" type="text" value="" size="100">
-
-</div>
-
-<input type="submit"/>
-
+<table>
+<tr>
+    <td>{{form.peptide_input_type.label}}</td>
+    <td>{{form.peptide_input_type}}</td>
+</tr>
+<tr>
+    <td>{{form.peptide_contents.label}}</td>
+    <td>{{form.peptide_contents(rows=6)}}</td>
+</tr>
+<tr>
+    <td>{{form.peptide_length.label}}</td>
+    <td>{{form.peptide_length}}</td>
+</tr>
+<tr>
+    <td>{{form.allele.label}}</td>
+    <td>{{form.allele(size=10, onchange="addAllele(this)")}}</td>
+</tr>
+<tr>
+    <td>{{form.selected_alleles.label}}</td>
+    <td>{{form.selected_alleles}}</td>
+</tr>
+<tr>
+    <td></td>
+    <td><input class="submit_button" type="submit"/></td>
+</tr>
+</table>
 
 </form>
 
 <script>
 
 function addAllele(e) {
-    debugger
-    var allelesElement = document.getElementById('alleles')
+    var allelesElement = document.getElementById('selected_alleles')
     allelesElement.value = allelesElement.value += e.value+';'
 }
 

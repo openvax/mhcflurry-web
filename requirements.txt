@@ -1,1 +1,5 @@
-flask
+biopython==1.69
+Flask==0.11.1
+Flask-WTF==0.9.4
+Jinja2==2.8
+
