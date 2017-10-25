@@ -91,18 +91,28 @@ def main():
 
 @app.route('/results', methods=["POST", "GET"])
 def get_results():
+    if request.method == 'POST':
+        form_alleles = request.form['alleles']
+        form_peptides = request.form['peptides'].strip()
+    else:
+        form_alleles = request.args.get('alleles')
+        form_peptides = request.args.get('peptides').strip()
+
     alleles = [
-        str(allele) for allele in request.form['alleles'].split() if allele
+        str(allele) for allele in form_alleles.split() if allele
     ]
     if not alleles:
         flash("Select at least one allele")
         return redirect(url_for('main'))
 
-    if not request.form['peptides'].strip():
+    max_len = 10000000
+    if len(form_peptides) > max_len:
+        form_peptides = form_peptides[:max_len]
+        flash("Peptide/protein input truncated to %d bytes" % max_len)
+
+    if not form_peptides:
         flash("Enter peptides or FASTA protein sequences")
         return redirect(url_for('main'))
-
-    form_peptides = request.form['peptides'].strip()[:10000000]  # limit the length
 
     try:
         if ">" in request.form['peptides']:
