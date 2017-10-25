@@ -95,8 +95,8 @@ def get_results():
         form_alleles = request.form['alleles']
         form_peptides = request.form['peptides'].strip()
     else:
-        form_alleles = request.args.get('alleles')
-        form_peptides = request.args.get('peptides').strip()
+        form_alleles = request.args.get('alleles', "")
+        form_peptides = request.args.get('peptides', "").strip()
 
     alleles = [
         str(allele) for allele in form_alleles.split() if allele
