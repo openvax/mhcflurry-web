@@ -115,12 +115,10 @@ def get_results():
         return redirect(url_for('main'))
 
     try:
-        if ">" in request.form['peptides']:
-            raw_result_df = predict_fasta(
-                form_peptides, alleles=alleles)
+        if ">" in form_peptides:
+            raw_result_df = predict_fasta(form_peptides, alleles=alleles)
         else:
-            raw_result_df = predict_peptides(
-                form_peptides.upper().split(), alleles=alleles)
+            raw_result_df = predict_peptides(form_peptides.upper().split(), alleles=alleles)
     except Exception as e:
         flash(str(e))
         return redirect(url_for('main'))
@@ -149,10 +147,17 @@ def get_results():
 
 @app.route('/api-predict', methods=["POST", "GET"])
 def iedb_api_predict():
+    if request.method == 'POST':
+        form_alleles = request.form['allele']
+        form_peptides = request.form['peptide'].strip()
+    else:
+        form_alleles = request.args.get('allele', "")
+        form_peptides = request.args.get('peptide', "").strip()
+
     alleles = [
-        str(allele) for allele in request.form['allele'].split() if allele
+        str(allele) for allele in form_alleles.split() if allele
     ]
-    form_peptides = request.form['peptide'].strip()[:10000000]
+    form_peptides = form_peptides.strip()[:10000000]
     peptides = [
         peptide.strip()
         for peptide in form_peptides.upper().split(",")
