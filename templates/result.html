@@ -2,6 +2,10 @@
 <head>
 <title>MHCflurry {{ mhcflurry_version }} prediction results</title>
 
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='poole.css') }} " />
+    <link rel="stylesheet" href="{{ url_for('static', filename='lanyon.css') }}" />
+
     <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/dt/dt-1.10.16/fh-3.1.3/datatables.min.css"/>
     <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/buttons/1.4.2/css/buttons.dataTables.min.css"/>
 
@@ -20,8 +24,11 @@
   	<script type="text/javascript" class="init">
 $(document).ready(function() {
 	$('#result').DataTable( {
-        dom: 'Bfrtip',
+        dom: 'Blfrtip',
         order: [[ 2, "asc" ]],
+        scrollX: true,
+        sScrollX: '100%',
+        lengthMenu: [[10, 25, 50, -1], [10, 25, 50, "All"]],
         buttons: [
             'copy', 'csv', 'excel', 'pdf',
         ]
@@ -31,12 +38,12 @@ $(document).ready(function() {
 </head>
 
 <h1>MHCflurry {{ mhcflurry_version }} prediction results</h1>
-<p>Affinity predictions are in nM.</p>
+<p>Affinity predictions are in nM. <a href="{{ url_for('main') }}">Back</a> to query.</p>
 
 <p>
 {% with messages = get_flashed_messages() %}
   {% if messages %}
-    <ul class=flashes>
+    <ul class="message">
     {% for message in messages %}
       <li>{{ message }}</li>
     {% endfor %}
@@ -46,7 +53,7 @@ $(document).ready(function() {
 </p>
 
 <body>
-<table id="result" class="display" width=""100%>
+<table id="result" class="display" width="100%">
 
 <thead>
 <tr>
@@ -73,9 +80,9 @@ $(document).ready(function() {
 </tr>
 {% endfor %}
 </tbody>
-
-
 </table>
+
+<p><small>Predictions generated with: <i>{{ software_note }}</i></small></p>
 
 </body>
 </html>

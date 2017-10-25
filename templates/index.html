@@ -6,15 +6,39 @@
 <h1>MHCflurry {{ mhcflurry_version }}</h1>
 <p>This prediction server generates MHC class I binding predictions using <a href="http://github.com/hammerlab/mhcflurry">MHCflurry.</a></p>
 
-<div>
-<label>Enter whitespace-separated peptides or full length sequences in FASTA format:</label>
-<textarea name="peptides" rows="20" cols="80">
+<p>
+{% with messages = get_flashed_messages() %}
+  {% if messages %}
+    <ul class="message">
+    {% for message in messages %}
+      <li>{{ message }}</li>
+    {% endfor %}
+    </ul>
+  {% endif %}
+{% endwith %}
+</p>
+
+<h2>Peptides or proteins</h2>
+<label>Enter whitespace-separated peptides, or a FASTA giving protein sequences:</label><br />
+<div style="column-count: 2; column-rule: 1px solid lightblue;">
+<textarea name="peptides" rows="20" cols="120">
 </textarea>
+    <div>
+
+    <h3>Examples</h3>
+        <pre>SIINFEKL SYYNFEKKL</pre>
+    <pre>> here's a protein in fasta format
+MDSKGSSQKGSRLLLLLVVSNLLLCQGVVSTPVCPNGPGNCQVSLRDLFDRAVMVSHYIHDLSS
+EMFNEFDKRYAQGKGFITMALNSCHTSSLPTPEDKEQAQQTHHEVLMSLILGLLRSWNDPLYHL
+VTEVRGMKGAPDAILSRAIEIEEENKRLLEGMEMIFGQVIPGAKETEPYPVWSGLPSLQTKDED
+ARYSAFYNLLHCLRRDSSKIDTYLKLLNCRIIYNNNC</pre>
+    </div>
 </div>
 <p />
 
-<div>
-<label>Select allele(s):</label>
+<h2>MHC alleles</h2>
+<div style="column-count: 2">
+<label>Select allele(s):</label><br />
 <select name="allele" size="12" class="form-control" onchange="addAllele(this)">
     {% for allele in alleles %}
     <option value="{{allele}}">{{allele}}</option>
@@ -28,16 +52,17 @@ Alleles selected: <input id='alleles' spellcheck="false" name="alleles" type="te
 </div>
 <br />
 <div>
-    <input type="submit" />
+    <input type="submit" value="PREDICT" />
 </div>
 </form>
+
 
 <script>
 
 function addAllele(e) {
     debugger
     var allelesElement = document.getElementById('alleles')
-    allelesElement.value = allelesElement.value += e.value+';'
+    allelesElement.value += e.value + ' '
 }
 
 </script>

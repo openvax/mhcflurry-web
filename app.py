@@ -1,6 +1,10 @@
 import pandas
-from flask import Flask, render_template, request, flash
+from flask import Flask, render_template, request, flash, redirect, url_for
+
 import mhcflurry
+import mhcnames
+import mhctools
+
 from mhcflurry import Class1AffinityPredictor, amino_acid
 from mhctools import MHCflurry
 from Bio import SeqIO
@@ -11,6 +15,13 @@ _predictor = Class1AffinityPredictor.load()
 
 from io import StringIO
 
+_SOFTWARE_VERSIONS_STRING = ", ".join(
+    "%s %s" % (module.__name__, getattr(module, '__version__'))
+    for module in [
+        mhcflurry, mhcnames, mhctools
+    ]
+)
+
 
 def check_peptide_validity(peptides, min_length, max_length):
     valid_peptide_regex = "^[%s]{%d,%d}$" % (
@@ -20,6 +31,9 @@ def check_peptide_validity(peptides, min_length, max_length):
 
 
 def predict_peptide(peptides, alleles):
+    if not peptides:
+        return None
+
     peptides_df = pandas.DataFrame({
         "peptide": peptides,
     })
@@ -77,17 +91,34 @@ def main():
 @app.route('/results', methods=["POST"])
 def get_results():
     alleles = [
-        str(allele) for allele in request.form['alleles'].split(';') if allele
+        str(allele) for allele in request.form['alleles'].split() if allele
     ]
-    if ">" in request.form['peptides']:
-        raw_result_df = predict_fasta(request.form['peptides'].upper(), alleles=alleles)
-    else:
-        raw_result_df = predict_peptide(
-            request.form['peptides'].upper().split(), alleles=alleles)
+    if not alleles:
+        flash("Select at least one allele")
+        return redirect(url_for('main'))
 
-    if raw_result_df is None:
-        result_df = pandas.DataFrame(columns=["peptide", "length", "tightest_affinity"])
-        flash("No predictions.")
+    if not request.form['peptides'].strip():
+        flash("Enter peptides or FASTA protein sequences")
+        return redirect(url_for('main'))
+
+    form_peptides = request.form['peptides'].strip()[:10000000]  # limit the length
+
+    try:
+        if ">" in request.form['peptides']:
+            raw_result_df = predict_fasta(
+                form_peptides, alleles=alleles)
+        else:
+            raw_result_df = predict_peptide(
+                form_peptides.upper().split(), alleles=alleles)
+    except Exception as e:
+        flash(str(e))
+        return redirect(url_for('main'))
+
+    if raw_result_df is None or len(raw_result_df) == 0:
+        result_df = pandas.DataFrame(
+            columns=["peptide", "length", "tightest_affinity"])
+        flash("Your query resulted in no predictions.")
+        return redirect(url_for('main'))
     else:
         result_df = raw_result_df.drop_duplicates(["peptide", "allele"]).reset_index()
         result_df = result_df.pivot(index="peptide", columns="allele", values="affinity")
@@ -96,12 +127,15 @@ def get_results():
         result_df["tightest_affinity"] = result_df.min(1)
         result_df["length"] = result_df.peptide.str.len()
         front_cols = ["peptide", "length", "tightest_affinity"]
-        result_df = result_df[
-            front_cols + [c for c in result_df.columns if c not in front_cols]
-        ].sort_values("tightest_affinity")
+        allele_cols = [c for c in result_df.columns if c not in front_cols]
+        full_cols = front_cols + allele_cols
+        result_df = result_df[full_cols].sort_values("tightest_affinity")
+        if len(allele_cols) == 1:
+            del result_df["tightest_affinity"]
         print(result_df)
     return render_template(
         'result.html',
+        software_note=_SOFTWARE_VERSIONS_STRING,
         mhcflurry_version=mhcflurry.__version__,
         result=result_df)
 
