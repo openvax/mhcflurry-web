@@ -3,50 +3,69 @@
 
 <form action="/results" method="post">
 
+<h1>MHCflurry {{ mhcflurry_version }}</h1>
+<p>This prediction server generates MHC class I binding predictions using <a href="http://github.com/hammerlab/mhcflurry">MHCflurry.</a></p>
 
+<p>
+{% with messages = get_flashed_messages() %}
+  {% if messages %}
+    <ul class="message">
+    {% for message in messages %}
+      <li>{{ message }}</li>
+    {% endfor %}
+    </ul>
+  {% endif %}
+{% endwith %}
+</p>
 
-<div>
-<label>Type of input </label>
-<select name="peptide_type" size="1"> 
-<option value="fasta" selected="">Fasta</option>
-<option value="peptide">Peptide</option>
-</select>
-</div>
-
-<div>
-<label>Enter up to 1000 peptides seperated by a `,`</label>
-<textarea name="peptides" rows="4" cols="50">
+<h2>Peptides or proteins</h2>
+<label>Enter whitespace-separated peptides, or a FASTA giving protein sequences:</label><br />
+<div style="column-count: 2; column-rule: 1px solid lightblue;">
+<textarea name="peptides" rows="20" cols="120">
 </textarea>
-</div>
+    <div>
 
-<div>
-<label>Please select an allele</label>
+    <h3>Examples</h3>
+        <pre>SIINFEKL SYYNFEKKL</pre>
+    <pre>> here's a protein in fasta format
+MDSKGSSQKGSRLLLLLVVSNLLLCQGVVSTPVCPNGPGNCQVSLRDLFDRAVMVSHYIHDLSS
+EMFNEFDKRYAQGKGFITMALNSCHTSSLPTPEDKEQAQQTHHEVLMSLILGLLRSWNDPLYHL
+VTEVRGMKGAPDAILSRAIEIEEENKRLLEGMEMIFGQVIPGAKETEPYPVWSGLPSLQTKDED
+ARYSAFYNLLHCLRRDSSKIDTYLKLLNCRIIYNNNC</pre>
+    </div>
+</div>
+<p />
+
+<h2>MHC alleles</h2>
+<div style="column-count: 2">
+<label>Select allele(s):</label><br />
 <select name="allele" size="12" class="form-control" onchange="addAllele(this)">
     {% for allele in alleles %}
     <option value="{{allele}}">{{allele}}</option>
    {% endfor %}
 </select>
-</br>
-<input id='alleles' spellcheck="false" name="alleles" type="text" value="" size="100">
-
 </div>
 
-<input type="submit"/>
-
-
+<p />
+<div>
+Alleles selected: <input id='alleles' spellcheck="false" name="alleles" type="text" value="" size="100">
+</div>
+<br />
+<div>
+    <input type="submit" value="PREDICT" />
+</div>
 </form>
+
 
 <script>
 
 function addAllele(e) {
     debugger
     var allelesElement = document.getElementById('alleles')
-    allelesElement.value = allelesElement.value += e.value+';'
+    allelesElement.value += e.value + ' '
 }
 
 </script>
-
-
 
 {%- endblock content %}
 
