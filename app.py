@@ -79,7 +79,6 @@ def predict_fasta(fasta_contents, alleles):
             _predictor.supported_peptide_lengths[0],
             _predictor.supported_peptide_lengths[1] + 1,
         )).to_dataframe()
-    print(binding_predictions)
     return binding_predictions
 
 
@@ -132,7 +131,6 @@ def get_results():
         result_df = result_df[full_cols].sort_values("tightest_affinity")
         if len(allele_cols) == 1:
             del result_df["tightest_affinity"]
-        print(result_df)
     return render_template(
         'result.html',
         software_note=_SOFTWARE_VERSIONS_STRING,
@@ -141,7 +139,6 @@ def get_results():
 
 @app.route('/api-predict', methods=["POST"])
 def iedb_api_predict():
-    print(request.form)
     alleles = [
         str(allele) for allele in request.form['allele'].split() if allele
     ]
