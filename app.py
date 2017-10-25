@@ -89,7 +89,7 @@ def main():
         mhcflurry_version=mhcflurry.__version__,
         alleles=_predictor.supported_alleles)
 
-@app.route('/results', methods=["POST"])
+@app.route('/results', methods=["POST", "GET"])
 def get_results():
     alleles = [
         str(allele) for allele in request.form['alleles'].split() if allele
@@ -137,7 +137,7 @@ def get_results():
         mhcflurry_version=mhcflurry.__version__,
         result=result_df)
 
-@app.route('/api-predict', methods=["POST"])
+@app.route('/api-predict', methods=["POST", "GET"])
 def iedb_api_predict():
     alleles = [
         str(allele) for allele in request.form['allele'].split() if allele
