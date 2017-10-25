@@ -173,7 +173,3 @@ def iedb_api_supported_alleles():
         for allele in _predictor.supported_alleles
     ]
     return "\n".join(strings)
-
-
-app.debug = True
-app.run()
