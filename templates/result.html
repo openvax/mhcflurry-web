@@ -17,33 +17,32 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='poole.css') }} " />
     <link rel="stylesheet" href="{{ url_for('static', filename='lanyon.css') }}" />
 
-    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/dt/dt-1.10.16/fh-3.1.3/datatables.min.css"/>
-    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/buttons/1.4.2/css/buttons.dataTables.min.css"/>
-
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.20/css/jquery.dataTables.min.css" />
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/buttons/1.6.1/css/buttons.dataTables.min.css" />
 
     <script type="text/javascript" src="https://code.jquery.com/jquery-1.12.4.min.js"></script>
-    <script type="text/javascript" src="https://cdn.datatables.net/v/dt/dt-1.10.16/fh-3.1.3/datatables.min.js"></script>
-    <script type="text/javascript" src="https://cdn.datatables.net/buttons/1.4.2/js/dataTables.buttons.min.js
-"></script>
-    <script type="text/javascript" src="https://cdn.datatables.net/buttons/1.4.2/js/buttons.flash.min.js"></script>
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.3/jszip.min.js"></script>
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.32/pdfmake.min.js"></script>
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.32/vfs_fonts.js"></script>
-    <script type="text/javascript" src="https://cdn.datatables.net/buttons/1.4.2/js/buttons.html5.min.js"></script>
-    <script type="text/javascript" src="https://cdn.datatables.net/buttons/1.4.2/js/buttons.print.min.js"></script>
+    <script type="text/javascript" src="https://cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js"></script>
+    <script type="text/javascript" src="https://cdn.datatables.net/buttons/1.6.1/js/dataTables.buttons.min.js"></script>
+    <script type="text/javascript" src="https://cdn.datatables.net/buttons/1.6.1/js/buttons.flash.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.3.0/jszip.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.62/pdfmake.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.62/vfs_fonts.js"></script>
+    <script type="text/javascript" src="https://cdn.datatables.net/buttons/1.6.1/js/buttons.html5.min.js"></script>
+    <script type="text/javascript" src="https://cdn.datatables.net/buttons/1.6.1/js/buttons.print.min.js"></script>
 
   	<script type="text/javascript" class="init">
 $(document).ready(function() {
-	$('#result').DataTable( {
+	var table = $('#result').DataTable( {
         dom: 'Blfrtip',
-        order: [[ 2, "asc" ]],
         scrollX: true,
-        sScrollX: '100%',
         lengthMenu: [[10, 25, 50, -1], [10, 25, 50, "All"]],
+        pageLength: 100,
+        processing: true,
         buttons: [
             'copy', 'csv', 'excel', 'pdf',
         ]
     });
+	table.columns.adjust().draw();
 } );
 	</script>
 </head>
@@ -64,34 +63,8 @@ $(document).ready(function() {
 </p>
 
 <body>
-<table id="result" class="display" width="100%">
 
-<thead>
-<tr>
-{% for col in result.columns %}
-<th> {{ col }} </th>
-{% endfor %}
-</tr>
-</thead>
-
-<tfoot>
-<tr>
-{% for col in result.columns %}
-<th> {{ col }} </th>
-{% endfor %}
-</tr>
-</tfoot>
-
-<tbody>
-<tr>
-{% for (key, row) in result.iterrows() %}
-{% for affinity in row %}
-	<td> {{ affinity }}</td>
-{% endfor %}
-</tr>
-{% endfor %}
-</tbody>
-</table>
+{{ result.to_html(table_id="result", classes=["display"], index=False, float_format="{:.3f}".format)|safe }}
 
 <p><small>Predictions generated with: <i>{{ software_note }}</i></small></p>
 

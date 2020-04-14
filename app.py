@@ -5,29 +5,27 @@ from flask import Flask, render_template, request, flash, redirect, url_for
 
 import mhcflurry
 import mhcnames
-import mhctools
 
-from mhcflurry import Class1AffinityPredictor, amino_acid
-from mhctools import MHCflurry
 from Bio import SeqIO
 
 app = Flask(__name__)
 app.secret_key = "this is mhcflurry secret key" + str(socket.gethostname())
-_predictor = Class1AffinityPredictor.load()
+
+PREDICTOR = mhcflurry.Class1PresentationPredictor.load()
 
 from io import StringIO
 
 _SOFTWARE_VERSIONS_STRING = ", ".join(
     "%s %s" % (module.__name__, getattr(module, '__version__'))
     for module in [
-        mhcflurry, mhcnames, mhctools
+        mhcflurry, mhcnames
     ]
 )
 
 
 def check_peptide_validity(peptides, min_length, max_length):
     valid_peptide_regex = "^[%s]{%d,%d}$" % (
-        "".join(amino_acid.COMMON_AMINO_ACIDS), min_length, max_length)
+        "".join(mhcflurry.amino_acid.COMMON_AMINO_ACIDS), min_length, max_length)
 
     return pandas.Series(peptides).str.match(valid_peptide_regex).values
 
@@ -41,8 +39,8 @@ def predict_peptides(peptides, alleles):
     })
     peptides_df["valid"] = check_peptide_validity(
         peptides,
-        min_length=_predictor.supported_peptide_lengths[0],
-        max_length=_predictor.supported_peptide_lengths[1],
+        min_length=PREDICTOR.supported_peptide_lengths[0],
+        max_length=PREDICTOR.supported_peptide_lengths[1],
     )
     invalid = peptides_df.loc[~peptides_df.valid].peptide
     if len(invalid):
@@ -53,10 +51,17 @@ def predict_peptides(peptides, alleles):
     if not peptides:
         return None
 
-    predictor = MHCflurry(alleles=alleles)
-    predictor.predictor = _predictor
-    binding_predictions = predictor.predict_peptides(peptides).to_dataframe()
-    return binding_predictions
+    predictions = PREDICTOR.predict(
+        peptides,
+        alleles,
+        include_affinity_percentile=True,
+        verbose=False)
+
+    del predictions["peptide_num"]
+    if (predictions["sample_name"] == predictions["best_allele"]).all():
+        del predictions["sample_name"]
+
+    return predictions
 
 
 def predict_fasta(fasta_contents, alleles):
@@ -67,19 +72,17 @@ def predict_fasta(fasta_contents, alleles):
         SeqIO.parse(StringIO(fasta_contents), "fasta")
         if check_peptide_validity(
             str(record.seq),
-            min_length=_predictor.supported_peptide_lengths[0],
+            min_length=PREDICTOR.supported_peptide_lengths[0],
             max_length=10000)[0]
     }
     if not protein_sequences:
         return None
-    predictor = MHCflurry(alleles=alleles)
-    binding_predictions = predictor.predict_subsequences(
+    predictions = PREDICTOR.predict_sequences(
         protein_sequences,
-        peptide_lengths=range(
-            _predictor.supported_peptide_lengths[0],
-            _predictor.supported_peptide_lengths[1] + 1,
-        )).to_dataframe()
-    return binding_predictions
+        alleles,
+        result="all",
+        verbose=False)
+    return predictions
 
 
 @app.route('/')
@@ -87,7 +90,9 @@ def main():
     return render_template(
         'index.html',
         mhcflurry_version=mhcflurry.__version__,
-        alleles=_predictor.supported_alleles)
+        alleles=sorted(
+            PREDICTOR.supported_alleles,
+            key=lambda a: (not a.startswith("HLA-"), a)))
 
 @app.route('/results', methods=["POST", "GET"])
 def get_results():
@@ -98,9 +103,10 @@ def get_results():
         form_alleles = request.args.get('alleles', "")
         form_peptides = request.args.get('peptides', "").strip()
 
-    alleles = [
-        str(allele) for allele in form_alleles.split() if allele
-    ]
+    alleles = {
+        str(genotype) : str(genotype).split(",")
+        for genotype in form_alleles.split() if genotype
+    }
     if not alleles:
         flash("Select at least one allele")
         return redirect(url_for('main'))
@@ -118,27 +124,19 @@ def get_results():
         if ">" in form_peptides:
             raw_result_df = predict_fasta(form_peptides, alleles=alleles)
         else:
-            raw_result_df = predict_peptides(form_peptides.upper().split(), alleles=alleles)
+            raw_result_df = predict_peptides(
+                form_peptides.upper().split(),
+                alleles=alleles)
     except Exception as e:
         flash(str(e))
+        app.logger.debug("User exception", exc_info=e)
         return redirect(url_for('main'))
 
     if raw_result_df is None or len(raw_result_df) == 0:
         flash("Your query resulted in no predictions.")
         return redirect(url_for('main'))
     else:
-        result_df = raw_result_df.drop_duplicates(["peptide", "allele"]).reset_index()
-        result_df = result_df.pivot(index="peptide", columns="allele", values="affinity")
-        result_df = result_df.reset_index()
-
-        result_df["tightest_affinity"] = result_df.min(1)
-        result_df["length"] = result_df.peptide.str.len()
-        front_cols = ["peptide", "length", "tightest_affinity"]
-        allele_cols = [c for c in result_df.columns if c not in front_cols]
-        full_cols = front_cols + allele_cols
-        result_df = result_df[full_cols].sort_values("tightest_affinity")
-        if len(allele_cols) == 1:
-            del result_df["tightest_affinity"]
+        result_df = raw_result_df
     return render_template(
         'result.html',
         software_note=_SOFTWARE_VERSIONS_STRING,
@@ -154,9 +152,10 @@ def iedb_api_predict():
         form_alleles = request.args.get('allele', "")
         form_peptides = request.args.get('peptide', "").strip()
 
-    alleles = [
-        str(allele) for allele in form_alleles.split() if allele
-    ]
+    alleles = {
+        str(genotype): str(genotype).split(",") for genotype in
+        form_alleles.split() if genotype
+    }
     form_peptides = form_peptides.strip()[:10000000]
     peptides = [
         peptide.strip()
@@ -169,7 +168,7 @@ def iedb_api_predict():
 
     try:
         result_df = predict_peptides(peptides, alleles=alleles)
-        result_df = result_df[["peptide", "length", "allele", "affinity"]]
+        #result_df = result_df[["peptide", "length", "allele", "affinity"]]
     except ValueError as e:
         return "ERROR: %s" % e.args[0]
     return result_df.to_csv(sep="\t", index=False, float_format="%0.4f")
@@ -178,10 +177,10 @@ def iedb_api_predict():
 @app.route('/alleles', methods=["GET"])
 def iedb_api_supported_alleles():
     peptide_lengths = ",".join(str(x) for x in range(
-        _predictor.supported_peptide_lengths[0],
-        _predictor.supported_peptide_lengths[1] + 1))
+        PREDICTOR.supported_peptide_lengths[0],
+        PREDICTOR.supported_peptide_lengths[1] + 1))
     strings = [
         "%s\t%s" % (allele, peptide_lengths)
-        for allele in _predictor.supported_alleles
+        for allele in PREDICTOR.supported_alleles
     ]
     return "\n".join(strings)

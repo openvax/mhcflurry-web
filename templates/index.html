@@ -4,7 +4,7 @@
 <form action="{{ url_for('get_results') }}" method="post">
 
 <h1>MHCflurry {{ mhcflurry_version }}</h1>
-<p>This prediction server generates MHC class I binding predictions using <a href="http://github.com/hammerlab/mhcflurry">MHCflurry.</a></p>
+<p>This prediction server generates MHC class I binding predictions using <a href="http://github.com/openvax/mhcflurry">MHCflurry.</a></p>
 
 <p>
 {% with messages = get_flashed_messages() %}
@@ -27,7 +27,7 @@
 
     <h3>Examples</h3>
         <pre>SIINFEKL SYYNFEKKL</pre>
-    <pre>> here's a protein in fasta format
+    <pre>> SEQ1 - an example fasta
 MDSKGSSQKGSRLLLLLVVSNLLLCQGVVSTPVCPNGPGNCQV
 EMFNEFDKRYAQGKGFITMALNSCHTSSLPTPEDKEQAQQTHH
 VTEVRGMKGAPDAILSRAIEIEEENKRLLEGMEMIFGQVIPGA
