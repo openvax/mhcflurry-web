@@ -37,12 +37,13 @@ $(document).ready(function() {
         scrollX: true,
         lengthMenu: [[10, 25, 50, -1], [10, 25, 50, "All"]],
         pageLength: 100,
-        processing: true,
+        autoWidth: true,
         buttons: [
-            'copy', 'csv', 'excel', 'pdf',
+             'copy', 'csv', 'excel', 'pdf'
         ]
     });
-	table.columns.adjust().draw();
+	$("#result").width('100%');
+	table.draw();
 } );
 	</script>
 </head>
@@ -64,7 +65,9 @@ $(document).ready(function() {
 
 <body>
 
+<div width="100%">
 {{ result.to_html(table_id="result", classes=["display"], index=False, float_format="{:.3f}".format)|safe }}
+</div>
 
 <p><small>Predictions generated with: <i>{{ software_note }}</i></small></p>
 
