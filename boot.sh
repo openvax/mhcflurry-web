@@ -1,2 +1,2 @@
 #!/bin/sh
-exec gunicorn -b :5000 --access-logfile - --error-logfile - app:app
+exec gunicorn -e SCRIPT_NAME=/mhcflurry -b :5000 --access-logfile - --error-logfile - app:app
