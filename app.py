@@ -4,7 +4,6 @@ import pandas
 from flask import Flask, render_template, request, flash, redirect, url_for
 
 import mhcflurry
-import mhcnames
 
 from Bio import SeqIO
 
@@ -18,7 +17,7 @@ from io import StringIO
 _SOFTWARE_VERSIONS_STRING = ", ".join(
     "%s %s" % (module.__name__, getattr(module, '__version__'))
     for module in [
-        mhcflurry, mhcnames
+        mhcflurry,
     ]
 )
 
