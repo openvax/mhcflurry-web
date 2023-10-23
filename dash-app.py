@@ -128,7 +128,7 @@ button_div = html.Div(
 table_div = html.Div(
     [
         html.H2(id="predictions-title"),
-        dbc.Row(
+        dbc.Spinner(children=[html.Div(        dbc.Row(
             dbc.Col(
                 dash_table.DataTable(
                     id="tbl",
@@ -142,7 +142,8 @@ table_div = html.Div(
                     },
                 ),
             )
-        ),
+        ),id="predictions-spinner")],)
+
     ]
 )
 
