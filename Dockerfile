@@ -13,7 +13,7 @@ RUN mhcflurry-downloads fetch
 
 COPY static/ static/
 COPY templates/ templates/
-COPY app.py .
+COPY dash-app.py .
 COPY boot.sh .
 
 RUN chmod +x boot.sh
