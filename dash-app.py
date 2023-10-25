@@ -177,7 +177,7 @@ def update_table(n_clicks, peptides, alleles):
     output["table_data"] = predictions.to_dict("records")
 
     def _format_column(col, numeric_cols):
-        if col == 'pos':
+        if col == "pos":
             return dict(
                 name=col.replace("_", " "),
                 id=col,
