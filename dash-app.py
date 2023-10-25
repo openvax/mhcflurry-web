@@ -1,6 +1,9 @@
+from io import StringIO
 from dash import Dash, html, dcc, dash_table, callback, Output, Input, State
-from dash.dash_table.Format import Format
+from dash.dash_table.Format import Format, Scheme
 import dash_bootstrap_components as dbc
+
+from Bio import SeqIO
 
 import pandas as pd
 
@@ -94,6 +97,9 @@ def table_div():
     header = html.H2(id="predictions-title")
     table = dash_table.DataTable(
         id="tbl",
+        sort_action="native",
+        page_action="native",
+        page_size=100,
         style_data={
             "whiteSpace": "normal",
             "height": "auto",
@@ -132,6 +138,7 @@ def page_layout():
     )
     return container
 
+
 # callbacks for interactivity
 @callback(
     [
@@ -159,44 +166,39 @@ def update_table(n_clicks, peptides, alleles):
             output["download-button"],
         )
 
-    peptides = peptides.split()
-    peptides_df = pd.DataFrame(
-        {
-            "peptide": peptides,
-        }
-    )
-    peptides_df["valid"] = check_peptide_validity(
-        peptides,
-        min_length=PREDICTOR.supported_peptide_lengths[0],
-        max_length=PREDICTOR.supported_peptide_lengths[1],
-    )
-    invalid = peptides_df.loc[~peptides_df.valid].peptide
-    # if len(invalid):
-    #     output["is_open"] = True
-    #     output["alert_children"] = f"Excluded {len(invalid)} unsupported peptides: {' '.join(invalid[:100])}"
-
-    peptides = list(peptides_df.loc[peptides_df.valid].peptide)
-    if not peptides:
+    if ">" in peptides:
+        # we have a FASTA
+        predictions, invalid = predict_fasta(peptides, alleles=alleles)
+    else:
+        predictions, invalid = predict_peptides(peptides, alleles)
+    if predictions.empty:
         return output
 
-    predictions = PREDICTOR.predict(
-        peptides,
-        alleles,
-        include_affinity_percentile=True,
-        verbose=False,
-    )
-    del predictions["peptide_num"]
-    if (predictions["sample_name"] == predictions["best_allele"]).all():
-        del predictions["sample_name"]
-
     output["table_data"] = predictions.to_dict("records")
+
+    def _format_column(col, numeric_cols):
+        if col == 'pos':
+            return dict(
+                name=col.replace("_", " "),
+                id=col,
+                type="numeric",
+                format=Format(precision=3, scheme=Scheme.decimal_integer),
+            )
+        if col in numeric_cols:
+            return dict(
+                name=col.replace("_", " "),
+                id=col,
+                type="numeric",
+                format=Format(precision=3, scheme=Scheme.fixed),
+            )
+        else:
+            return dict(name=col.replace("_", " "), id=col)
+
     numeric_cols = predictions.select_dtypes(include="number").columns.tolist()
     output["table_columns"] = [
-        dict(name=c.replace("_", " "), id=c, type="numeric", format=Format(precision=3))
-        if c in numeric_cols
-        else dict(name=c.replace("_", " "), id=c)
-        for c in predictions.columns
+        _format_column(c, numeric_cols) for c in predictions.columns
     ]
+
     output["predictions-title"] = f"Predictions for {len(peptides)} peptides"
     output["download-button"] = dict()
 
@@ -206,6 +208,7 @@ def update_table(n_clicks, peptides, alleles):
         output["predictions-title"],
         output["download-button"],
     )
+
 
 @callback(
     Output("download-dataframe-csv", "data"),
@@ -229,6 +232,59 @@ def check_peptide_validity(peptides, min_length, max_length):
     )
 
     return pd.Series(peptides).str.match(valid_peptide_regex).values
+
+
+def predict_peptides(peptides, alleles):
+    invalid = []
+    peptides = peptides.upper().split()
+    peptides_df = pd.DataFrame(
+        {
+            "peptide": peptides,
+        }
+    )
+    peptides_df["valid"] = check_peptide_validity(
+        peptides,
+        min_length=PREDICTOR.supported_peptide_lengths[0],
+        max_length=PREDICTOR.supported_peptide_lengths[1],
+    )
+    invalid = peptides_df.loc[~peptides_df.valid].peptide.tolist()
+
+    peptides = list(peptides_df.loc[peptides_df.valid].peptide)
+    if not peptides:
+        return pd.DataFrame()
+
+    predictions = PREDICTOR.predict(
+        peptides,
+        alleles,
+        include_affinity_percentile=True,
+        verbose=False,
+    )
+    del predictions["peptide_num"]
+    if (predictions["sample_name"] == predictions["best_allele"]).all():
+        del predictions["sample_name"]
+
+    return predictions, invalid
+
+
+def predict_fasta(fasta_contents, alleles):
+    protein_sequences = {
+        record.id: str(record.seq)
+        for record in SeqIO.parse(StringIO(fasta_contents), "fasta")
+        if check_peptide_validity(
+            str(record.seq),
+            min_length=PREDICTOR.supported_peptide_lengths[0],
+            max_length=10000,
+        )[0]
+    }
+    if not protein_sequences:
+        return pd.DataFrame(), fasta_contents
+
+    predictions = PREDICTOR.predict_sequences(
+        protein_sequences, alleles, result="all", verbose=False
+    )
+
+    return predictions, []
+
 
 # Assign app layout
 app.layout = page_layout()
