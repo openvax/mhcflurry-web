@@ -17,7 +17,7 @@ app.title = "MHCFlurry Web"
 server = app.server
 
 
-# define component sections
+# Component sections
 def header_div():
     """App intro"""
     header = html.H1(f"MHCFlurry Web {mhcflurry.__version__}")
@@ -85,9 +85,19 @@ def button_div():
         style=dict(display="none"),
         color="secondary",
     )
-    stack = dbc.Stack([submit_button, download_button], direction="horizontal", gap=2)
-    col = dbc.Col(stack, md=3)
-    row = dbc.Row(col)
+    horizontal_stack = dbc.Stack(
+        [submit_button, download_button], direction="horizontal", gap=2
+    )
+    button_col = dbc.Col(horizontal_stack, md=3)
+    alert = dbc.Alert(
+        "",
+        id="submit-alert",
+        is_open=False,
+        dismissable=True,
+        fade=False,
+    )
+    alert_col = dbc.Col(alert, md=6)
+    row = dbc.Row([button_col, alert_col])
     div = html.Div(row)
     return div
 
@@ -139,13 +149,15 @@ def page_layout():
     return container
 
 
-# callbacks for interactivity
+# Callbacks for interactivity
 @callback(
     [
         Output("tbl", "data"),
         Output("tbl", "columns"),
         Output("predictions-title", "children"),
         Output("download-button", "style"),
+        Output("submit-alert", "is_open"),
+        Output("submit-alert", "children"),
     ],
     inputs=[Input("submit-button", "n_clicks")],
     state=[State("peptides-input", "value"), State("alleles-input", "value")],
@@ -157,23 +169,56 @@ def update_table(n_clicks, peptides, alleles):
         "table_columns": [],
         "predictions-title": "",
         "download-button": dict(display="none"),
+        "submit-alert-open": False,
+        "submit-alert-children": "",
     }
     if not n_clicks or not alleles or not peptides:
+        if not alleles:
+            output["submit-alert-children"] = "Please select at least one allele"
+            output["submit-alert-open"] = True
+        if not peptides:
+            output["submit-alert-children"] = "Please enter at least one peptide"
+            output["submit-alert-open"] = True
         return (
             output["table_data"],
             output["table_columns"],
             output["predictions-title"],
             output["download-button"],
+            output["submit-alert-open"],
+            output["submit-alert-children"],
         )
 
-    if ">" in peptides:
-        # we have a FASTA
-        predictions, invalid = predict_fasta(peptides, alleles=alleles)
-    else:
-        predictions, invalid = predict_peptides(peptides, alleles)
-    if predictions.empty:
+    try:
+        if ">" in peptides:
+            # we have a FASTA
+            predictions, invalid = predict_fasta(peptides, alleles=alleles)
+        else:
+            predictions, invalid = predict_peptides(peptides, alleles)
+
+        if invalid:
+            invalid_str = ", ".join(invalid)
+            if len(invalid_str) > 100:
+                invalid_str = invalid_str[:100] + "..."
+            output[
+                "submit-alert-children"
+            ] = f"Excluded invalid peptides: {invalid_str}"
+            output["submit-alert-open"] = True
+    except:
+        output[
+            "submit-alert-children"
+        ] = "An error occurred. Please check your inputs and try again."
+        output["submit-alert-open"] = True
         return output
 
+    if predictions.empty:
+        return (
+            output["table_data"],
+            output["table_columns"],
+            output["predictions-title"],
+            output["download-button"],
+            output["submit-alert-open"],
+            output["submit-alert-children"],
+        )
     output["table_data"] = predictions.to_dict("records")
 
     def _format_column(col, numeric_cols):
@@ -207,6 +252,8 @@ def update_table(n_clicks, peptides, alleles):
         output["table_columns"],
         output["predictions-title"],
         output["download-button"],
+        output["submit-alert-open"],
+        output["submit-alert-children"],
     )
 
 
@@ -223,7 +270,8 @@ def download_table(n_clicks, data, columns):
     return dcc.send_data_frame(df.to_csv, "mhcflurry-predictions.csv")
 
 
-# utilities; TODO: move to a new file
+# Utility methods
+# TODO: move to a new file
 def check_peptide_validity(peptides, min_length, max_length):
     valid_peptide_regex = "^[%s]{%d,%d}$" % (
         "".join(mhcflurry.amino_acid.COMMON_AMINO_ACIDS),
@@ -251,7 +299,7 @@ def predict_peptides(peptides, alleles):
 
     peptides = list(peptides_df.loc[peptides_df.valid].peptide)
     if not peptides:
-        return pd.DataFrame()
+        return pd.DataFrame(), invalid
 
     predictions = PREDICTOR.predict(
         peptides,
