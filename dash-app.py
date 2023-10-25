@@ -13,161 +13,126 @@ app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 app.title = "MHCFlurry Web"
 server = app.server
 
-# App layout
-header_div = html.Div(
-    [
-        html.H1(f"MHCFlurry Web {mhcflurry.__version__}"),
-        html.Div(
-            [
-                html.P(
-                    [
-                        "This prediction server generates MHC class I binding predictions using ",
-                        html.A("MHCFlurry", href="http://github.com/openvax/mhcflurry"),
-                        ".",
-                    ]
-                ),
-            ]
-        ),
-    ]
-)
 
-alleles_input_div = html.Div(
-    [
-        html.H2("Alleles"),
-        html.Div(
-            [
-                dbc.Row(
-                    dbc.Col(
-                        [
-                            dbc.Label("Choose a bunch"),
-                            dcc.Dropdown(
-                                options=[
-                                    a for a in sorted(PREDICTOR.supported_alleles)
-                                ],
-                                multi=True,
-                                id="alleles-input",
-                            ),
-                        ],
-                        md=6,
-                    )
-                ),
-            ]
-        ),
-    ]
-)
+# define component sections
+def header_div():
+    """App intro"""
+    header = html.H1(f"MHCFlurry Web {mhcflurry.__version__}")
+    par = html.P(
+        [
+            "This prediction server generates MHC class I binding predictions using ",
+            html.A("MHCFlurry", href="http://github.com/openvax/mhcflurry"),
+            ".",
+        ]
+    )
+    div = html.Div([header, par])
+    return div
 
-peptides_input_div = html.Div(
-    [
-        html.H2("Peptides"),
-        html.Div(
-            [
-                dbc.Row(
-                    dbc.Col(
-                        [
-                            dbc.Label(
-                                "Enter whitespace-separated peptides, or a FASTA giving protein sequences"
-                            ),
-                            dcc.Markdown(
+
+def alleles_input_div():
+    """Alleles input, selected from a dropdown"""
+    header = html.H2("Alleles")
+    text = dbc.Label("Choose a bunch")
+    dropdown = dcc.Dropdown(
+        options=[a for a in sorted(PREDICTOR.supported_alleles)],
+        multi=True,
+        id="alleles-input",
+    )
+    col = dbc.Col([text, dropdown], md=6)
+    row = html.Div([dbc.Row(col)])
+    div = html.Div([header, row])
+    return div
+
+
+def peptides_input_div():
+    """Peptides input, provided by the user in a textbox"""
+    header = html.H2("Peptides")
+    text = dbc.Label(
+        "Enter whitespace-separated peptides, or a FASTA giving protein sequences"
+    )
+    example = dcc.Markdown(
+        """
+                                Example peptides:
+                                ```
+                                SIINFEKL SYYNFEKKL
+                                ```
                                 """
-            Example peptides:
-            ```
-            SIINFEKL SYYNFEKKL
-            ```
-            """
-                            ),
-                        ]
-                    )
-                ),
-                dbc.Row(
-                    dbc.Col(
-                        [
-                            dbc.Textarea(
-                                id="peptides-input",
-                                placeholder="Enter peptides here",
-                                size="lg",
-                            ),
-                        ],
-                    )
-                ),
-            ]
-        ),
-    ]
-)
-
-button_div = html.Div(
-    [
-        dbc.Row(
-            [
-                dbc.Col(
-                    dbc.Stack(
-                        [
-                            dbc.Button(
-                                "Submit",
-                                id="submit-button",
-                                className="me-1",
-                                n_clicks=0,
-                            ),
-                            dbc.Button(
-                                "Download",
-                                id="download-button",
-                                className="me-1",
-                                n_clicks=0,
-                                style=dict(display="none"),
-                                color="secondary"
-                            ),
-                        ],
-                        direction="horizontal", gap=2
-                    ),
-                    md=3,
-                )
-            ]
-        )
-    ]
-)
-
-table_div = html.Div(
-    [
-        html.H2(id="predictions-title"),
-        dbc.Spinner(children=[html.Div(        dbc.Row(
-            dbc.Col(
-                dash_table.DataTable(
-                    id="tbl",
-                    style_data={
-                        "whiteSpace": "normal",
-                        "height": "auto",
-                    },
-                    style_header={
-                        "whiteSpace": "normal",
-                        "height": "auto",
-                    },
-                ),
-            )
-        ),id="predictions-spinner")],)
-
-    ]
-)
-
-app.layout = dbc.Container(
-    [
-        header_div,
-        html.Hr(),
-        dbc.Stack(
-            [
-                alleles_input_div,
-                html.Br(),
-                peptides_input_div,
-                html.Br(),
-                button_div,
-                html.Br(),
-                table_div,
-            ],
-            gap=3,
-        ),
-        dcc.Download(id="download-dataframe-csv"),
-    ]
-)
+    )
+    row_1 = dbc.Row(dbc.Col([text, example]))
+    text_area = dbc.Textarea(
+        id="peptides-input",
+        placeholder="Enter peptides here",
+        size="lg",
+    )
+    row_2 = dbc.Row(dbc.Col(text_area))
+    div = html.Div([header, html.Div([row_1, row_2])])
+    return div
 
 
+def button_div():
+    """Submit and download buttons"""
+    submit_button = dbc.Button(
+        "Submit", id="submit-button", className="me-1", n_clicks=0
+    )
+    download_button = dbc.Button(
+        "Download",
+        id="download-button",
+        className="me-1",
+        n_clicks=0,
+        style=dict(display="none"),
+        color="secondary",
+    )
+    stack = dbc.Stack([submit_button, download_button], direction="horizontal", gap=2)
+    col = dbc.Col(stack, md=3)
+    row = dbc.Row(col)
+    div = html.Div(row)
+    return div
+
+
+def table_div():
+    """Table of predictions"""
+    header = html.H2(id="predictions-title")
+    table = dash_table.DataTable(
+        id="tbl",
+        style_data={
+            "whiteSpace": "normal",
+            "height": "auto",
+        },
+        style_header={
+            "whiteSpace": "normal",
+            "height": "auto",
+        },
+    )
+    row = dbc.Row(dbc.Col(table))
+    spinner = dbc.Spinner(row, id="predictions-spinner")
+    div = html.Div([header, spinner])
+    return div
+
+
+def page_layout():
+    stacked_sections = dbc.Stack(
+        [
+            alleles_input_div(),
+            html.Br(),
+            peptides_input_div(),
+            html.Br(),
+            button_div(),
+            html.Br(),
+            table_div(),
+        ],
+        gap=3,
+    )
+    container = dbc.Container(
+        [
+            header_div(),
+            html.Hr(),
+            stacked_sections,
+            dcc.Download(id="download-dataframe-csv"),
+        ]
+    )
+    return container
+
+# callbacks for interactivity
 @callback(
     [
         Output("tbl", "data"),
@@ -193,9 +158,6 @@ def update_table(n_clicks, peptides, alleles):
             output["predictions-title"],
             output["download-button"],
         )
-
-    print(peptides)
-    print(alleles)
 
     peptides = peptides.split()
     peptides_df = pd.DataFrame(
@@ -245,16 +207,6 @@ def update_table(n_clicks, peptides, alleles):
         output["download-button"],
     )
 
-
-def check_peptide_validity(peptides, min_length, max_length):
-    valid_peptide_regex = "^[%s]{%d,%d}$" % (
-        "".join(mhcflurry.amino_acid.COMMON_AMINO_ACIDS),
-        min_length,
-        max_length,
-    )
-
-    return pd.Series(peptides).str.match(valid_peptide_regex).values
-
 @callback(
     Output("download-dataframe-csv", "data"),
     inputs=[Input("download-button", "n_clicks")],
@@ -264,12 +216,22 @@ def check_peptide_validity(peptides, min_length, max_length):
 def download_table(n_clicks, data, columns):
     if not n_clicks:
         return None
-    print(data)
-    print(columns)
     df = pd.DataFrame(data, columns=[c["id"] for c in columns])
-    print(df)
     return dcc.send_data_frame(df.to_csv, "mhcflurry-predictions.csv")
 
+
+# utilities; TODO: move to a new file
+def check_peptide_validity(peptides, min_length, max_length):
+    valid_peptide_regex = "^[%s]{%d,%d}$" % (
+        "".join(mhcflurry.amino_acid.COMMON_AMINO_ACIDS),
+        min_length,
+        max_length,
+    )
+
+    return pd.Series(peptides).str.match(valid_peptide_regex).values
+
+# Assign app layout
+app.layout = page_layout()
 
 if __name__ == "__main__":
     app.run(debug=True)
