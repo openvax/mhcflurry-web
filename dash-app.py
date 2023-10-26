@@ -37,7 +37,7 @@ def alleles_input_div():
     header = html.H2("Alleles")
     text = dbc.Label("Choose a bunch")
     dropdown = dcc.Dropdown(
-        options=[a for a in sorted(PREDICTOR.supported_alleles)],
+        options=[a for a in PREDICTOR.supported_alleles],
         multi=True,
         id="alleles-input",
     )
@@ -64,8 +64,8 @@ def peptides_input_div():
     row_1 = dbc.Row(dbc.Col([text, example]))
     text_area = dbc.Textarea(
         id="peptides-input",
-        placeholder="Enter peptides here",
-        size="lg",
+        placeholder="Enter peptides or FASTA here. Use Shift+Enter to add a new line.",
+        rows=5,
     )
     row_2 = dbc.Row(dbc.Col(text_area))
     div = html.Div([header, html.Div([row_1, row_2])])
@@ -189,8 +189,9 @@ def update_table(n_clicks, peptides, alleles):
         )
 
     try:
+        using_fasta = False
         if ">" in peptides:
-            # we have a FASTA
+            using_fasta = True
             predictions, invalid = predict_fasta(peptides, alleles=alleles)
         else:
             predictions, invalid = predict_peptides(peptides, alleles)
@@ -199,9 +200,11 @@ def update_table(n_clicks, peptides, alleles):
             invalid_str = ", ".join(invalid)
             if len(invalid_str) > 100:
                 invalid_str = invalid_str[:100] + "..."
-            output[
-                "submit-alert-children"
-            ] = f"Excluded invalid peptides: {invalid_str}"
+            output["submit-alert-children"] = (
+                f"Could not parse FASTA: {invalid_str}"
+                if using_fasta
+                else f"Excluded invalid peptides: {invalid_str}"
+            )
             output["submit-alert-open"] = True
     except:
         output[
@@ -315,23 +318,38 @@ def predict_peptides(peptides, alleles):
 
 
 def predict_fasta(fasta_contents, alleles):
-    protein_sequences = {
-        record.id: str(record.seq)
-        for record in SeqIO.parse(StringIO(fasta_contents), "fasta")
-        if check_peptide_validity(
+    def _parse_fasta_record(record):
+        valid = check_peptide_validity(
             str(record.seq),
             min_length=PREDICTOR.supported_peptide_lengths[0],
             max_length=10000,
         )[0]
+        if valid:
+            return str(record.seq)
+        else:
+            return None
+
+    protein_sequences = {
+        record.id: _parse_fasta_record(record)
+        for record in SeqIO.parse(StringIO(fasta_contents), "fasta")
     }
-    if not protein_sequences:
-        return pd.DataFrame(), fasta_contents
+    valid_protein_sequences = {
+        k: v for k, v in protein_sequences.items() if v is not None
+    }
+    invalid_records = [
+        record.id
+        for record in SeqIO.parse(StringIO(fasta_contents), "fasta")
+        if record.id not in valid_protein_sequences
+    ]
+
+    if not valid_protein_sequences:
+        return pd.DataFrame(), invalid_records
 
     predictions = PREDICTOR.predict_sequences(
-        protein_sequences, alleles, result="all", verbose=False
+        valid_protein_sequences, alleles, result="all", verbose=False
     )
 
-    return predictions, []
+    return predictions, invalid_records
 
 
 # Assign app layout
