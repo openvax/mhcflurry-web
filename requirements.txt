@@ -1,3 +1,5 @@
+dash
+dash-bootstrap-components
 flask
 mhcflurry==2.1.0
 biopython
